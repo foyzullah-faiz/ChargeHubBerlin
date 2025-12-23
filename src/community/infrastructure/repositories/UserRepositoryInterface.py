@@ -1,0 +1,2 @@
+class UserRepositoryInterface:
+    pass

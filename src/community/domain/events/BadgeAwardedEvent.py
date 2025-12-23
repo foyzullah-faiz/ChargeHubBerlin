@@ -1,0 +1,2 @@
+class BadgeAwardedEvent:
+    pass

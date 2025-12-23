@@ -1,0 +1,2 @@
+class ChargingStationAggregate:
+    pass
