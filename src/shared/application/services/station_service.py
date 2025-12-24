@@ -1,31 +1,11 @@
 from typing import List
 from src.shared.domain.entities.charging_station import ChargingStation
-from src.shared.infrastructure.repositories.csv_repository import CsvChargingStationRepository
+from src.shared.domain.repositories.charging_station_repository import ChargingStationRepository
 
 class StationService:
-    """
-    Application Service that orchestrates the search for charging stations.
-    It acts as the bridge between the UI (Streamlit) and the Data Layer (CSV).
-    """
-    
-    def __init__(self, repository: CsvChargingStationRepository):
-        """
-        Initialize the service with a specific data repository.
-        
-        Args:
-            repository (CsvChargingStationRepository): The data access object.
-        """
+    def __init__(self, repository: ChargingStationRepository):
         self.repository = repository
 
-    def get_stations_for_zip(self, postal_code: str) -> List[ChargingStation]:
-        """
-        Retrieve all charging stations for a given postal code.
-        
-        Args:
-            postal_code (str): The zip code to search for (e.g. "10115").
-            
-        Returns:
-            List[ChargingStation]: A list of found stations.
-        """
-        # We can add extra business logic here later (e.g., logging, validation)
-        return self.repository.find_by_postal_code(postal_code)
+    def get_stations_for_zip(self, zip_code: str) -> List[ChargingStation]:
+        # Call the corrected method name
+        return self.repository.find_by_postal_code(zip_code)

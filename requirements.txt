@@ -1,13 +1,3 @@
-pytest
-pandas
-geopandas
-shapely
-factor-analyzer
-scikit-learn
-matplotlib
-seaborn
-plotly
-dash
 streamlit
-streamlit_folium
-Folium
+pandas
+pydeck

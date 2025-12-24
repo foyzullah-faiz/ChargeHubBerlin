@@ -1,0 +1,5 @@
+Betreiber;Strasse;Hausnummer;Postleitzahl;Ort;Bundesland;Kreis;Breitengrad;Laengengrad;Nennleistung Ladeeinrichtung [kW];Art der Ladeeinrichung;Anzahl Ladepunkte
+Vattenfall;Musterstrasse;1;10117;Berlin;Berlin;Berlin;52.516;13.377;22;Normal;2
+Deutsche Bahn;Europaplatz;1;10557;Berlin;Berlin;Berlin;52.525;13.369;50;Schnelllader;4
+EnBW;Ritterstrasse;26;10969;Berlin;Berlin;Berlin;52.502;13.409;22;Normal;2
+Shell;Hardenbergstrasse;12;10623;Berlin;Berlin;Berlin;52.512;13.328;150;Schnelllader;2
