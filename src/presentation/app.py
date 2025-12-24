@@ -3,23 +3,24 @@ import os
 import streamlit as st
 
 # ==========================================
-# 🚨 CRITICAL PATH SETUP (DO NOT MOVE UP)
+# 🚨 CRITICAL SETUP - MUST RUN BEFORE IMPORTS
 # ==========================================
-# 1. Get the directory of this file: .../src/presentation
-current_dir = os.path.dirname(os.path.abspath(__file__))
+# 1. Get the path to THIS file (src/presentation/app.py)
+current_file_path = os.path.abspath(__file__)
+current_dir = os.path.dirname(current_file_path)
 
-# 2. Go up 2 levels to get the Project Root: .../chargehubberlin
+# 2. Calculate Project Root (Go up 2 folders: src/presentation -> src -> ROOT)
 project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
 
-# 3. Add root to Python path so "import src..." works
+# 3. FORCE the Project Root into Python's search path
 if project_root not in sys.path:
-    sys.path.append(project_root)
+    sys.path.insert(0, project_root)
 
 # 4. Define CSV Path relative to root
 CSV_PATH = os.path.join(project_root, "src", "maintenance", "infrastructure", "datasets", "Ladesaeulenregister.csv")
 
 # ==========================================
-# 📦 CUSTOM IMPORTS (MUST BE BELOW PATH SETUP)
+# 📦 CUSTOM IMPORTS
 # ==========================================
 import pandas as pd
 import pydeck as pdk
@@ -31,7 +32,7 @@ try:
     from src.shared.application.services.malfunction_service import MalfunctionService
 except ImportError as e:
     st.error("❌ Import Error: The app cannot find the internal modules.")
-    st.code(f"Current Path Fix: {sys.path}")
+    st.code(f"Project Root: {project_root}\nError: {e}")
     st.stop()
 
 # ==========================================
@@ -137,10 +138,9 @@ def main():
             for i, s in enumerate(stations):
                 is_broken = malfunction_service.is_station_broken(s.station_id)
                 status_text = "🔴 Not Available" if is_broken else "🟢 Available"
-                # Colors: Red or Light Green
                 color = [200, 0, 0, 255] if is_broken else [0, 200, 0, 200]
 
-                # Jitter for visibility
+                # Jitter
                 lat_jitter = s.lat + random.uniform(-0.0005, 0.0005)
                 lon_jitter = s.lon + random.uniform(-0.0005, 0.0005)
 
@@ -158,7 +158,7 @@ def main():
             
             df = pd.DataFrame(data_list)
             
-            # Scatter Layer (Dots)
+            # Scatter Layer
             scatter_layer = pdk.Layer(
                 'ScatterplotLayer', 
                 data=df, 
@@ -172,7 +172,7 @@ def main():
                 stroked=True
             )
 
-            # Text Layer (Numbers)
+            # Text Layer
             text_layer = pdk.Layer(
                 "TextLayer",
                 data=df,
@@ -191,8 +191,9 @@ def main():
                 zoom=12
             )
 
+            # 🛠️ MAP FIX: Changed map_style to a free CartoDB style (No API Key needed)
             st.pydeck_chart(pdk.Deck(
-                map_style='mapbox://styles/mapbox/streets-v11',
+                map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
                 initial_view_state=view_state,
                 layers=[scatter_layer, text_layer],
                 tooltip={"text": "No: {No}\n{Operator}\n{Status}\nID: {Station ID}"}
