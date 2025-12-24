@@ -138,6 +138,7 @@ def main():
             for i, s in enumerate(stations):
                 is_broken = malfunction_service.is_station_broken(s.station_id)
                 status_text = "🔴 Not Available" if is_broken else "🟢 Available"
+                # Colors: Red or Green
                 color = [200, 0, 0, 255] if is_broken else [0, 200, 0, 200]
 
                 # Jitter
@@ -191,9 +192,9 @@ def main():
                 zoom=12
             )
 
-            # 🛠️ MAP FIX: Changed map_style to a free CartoDB style (No API Key needed)
+            # 🛠️ MAP FIX: "Voyager" style (Colorful, Google Maps-like)
             st.pydeck_chart(pdk.Deck(
-                map_style='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+                map_style='https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
                 initial_view_state=view_state,
                 layers=[scatter_layer, text_layer],
                 tooltip={"text": "No: {No}\n{Operator}\n{Status}\nID: {Station ID}"}
