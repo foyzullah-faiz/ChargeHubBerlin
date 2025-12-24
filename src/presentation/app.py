@@ -1,78 +1,112 @@
 import streamlit as st
-import sys
-import os
+import pandas as pd
+import pydeck as pdk
 
-# --- 1. PATH FIX ---
-# We need to tell Python where the 'src' folder is.
-# app.py is in: src/presentation/
-# We go up 2 levels to get to the Project Root: src/presentation/ -> src/ -> Root/
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_dir, "../.."))
-sys.path.insert(0, project_root)
-
-# --- 2. IMPORTS ---
+# Import your services
 from src.shared.infrastructure.repositories.csv_repository import CsvChargingStationRepository
 from src.shared.application.services.station_service import StationService
+from src.shared.application.services.malfunction_service import MalfunctionService
 
-# --- 3. SETUP BACKEND ---
-# Initialize the Repository and Service (Dependency Injection)
-repo = CsvChargingStationRepository()
-service = StationService(repo)
+def main():
+    # 1. Page Configuration
+    st.set_page_config(page_title="ChargeHub Berlin", layout="wide")
+    st.title("⚡ ChargeHub Berlin")
+    st.markdown("Find charging stations and report maintenance issues.")
 
-# --- 4. BUILD UI ---
-st.set_page_config(page_title="Berlin Charging Hub", page_icon="⚡", layout="wide")
+    # ---------------------------------------------------------
+    # USE CASE 2: MALFUNCTION REPORTING (Sidebar)
+    # ---------------------------------------------------------
+    st.sidebar.header("🔧 Report Malfunction")
+    st.sidebar.info("See a broken charger? Report it here.")
 
-st.title("Berlin Charging Hub ⚡")
-st.markdown("### Search for Charging Stations by Zip Code")
+    # Initialize the Malfunction Service
+    malfunction_service = MalfunctionService()
 
-# Sidebar for Search
-with st.sidebar:
-    st.header("Search Settings")
-    search_zip = st.text_input("Enter Postal Code (e.g., 10115):", value="10115")
-    search_button = st.button("Search Stations")
-
-# Main Content Area
-if search_button:
-    if search_zip:
-        # Call the Application Service
-        stations = service.get_stations_for_zip(search_zip)
+    # Create the Form
+    with st.sidebar.form("report_form"):
+        station_id_input = st.text_input("Station ID (Copy from table)")
+        issue = st.selectbox("Issue Type", 
+                           ["Screen Broken", "Cable Damaged", "Card Reader Fail", "No Power", "Other"])
         
-        if stations:
-            st.success(f"Found {len(stations)} charging stations in {search_zip}.")
-            
-            # --- MAP SECTION ---
-            st.subheader(f"📍 Map of Stations in {search_zip}")
-            
-            # Prepare data for Map (Streamlit requires 'lat' and 'lon' columns)
-            map_data = [
-                {'lat': s.lat, 'lon': s.lon} 
-                for s in stations 
-                if s.lat != 0 and s.lon != 0
-            ]
-            
-            if map_data:
-                st.map(map_data)
-            else:
-                st.warning("No GPS coordinates available for these stations.")
+        submitted = st.form_submit_button("🚨 Submit Report")
+        
+        if submitted and station_id_input:
+            # Save the report to the JSON file
+            malfunction_service.report_malfunction(station_id_input, issue)
+            st.sidebar.success(f"✅ Report saved for ID: {station_id_input}")
 
-            # --- TABLE SECTION ---
-            st.subheader("📋 Station Details")
-            
-            # Prepare data for Table (Displaying Operator/ID clearly)
-            table_data = [
-                {
-                    "Operator / ID": s.station_id, 
-                    "Postal Code": s.postal_code,
-                    "Latitude": s.lat,
-                    "Longitude": s.lon
-                } 
-                for s in stations
-            ]
-            st.table(table_data)
-                
-        else:
-            st.error(f"No stations found for postal code: {search_zip}.")
+    st.sidebar.markdown("---")
+
+    # ---------------------------------------------------------
+    # USE CASE 1: SEARCH & MAP (Main Area)
+    # ---------------------------------------------------------
+    
+    # Initialize Repository & Service
+    repo = CsvChargingStationRepository("data/Ladesaeulenregister.csv")
+    service = StationService(repo)
+
+    # Search Input
+    st.sidebar.header("🔎 Search Filter")
+    zip_code = st.sidebar.text_input("Enter Zip Code (Berlin)", "10115")
+
+    # Get Data
+    stations = service.get_stations_for_zip(zip_code)
+
+    # Display Results
+    if stations:
+        # Convert to DataFrame for Streamlit
+        data = [
+            {
+                "Station ID": s.station_id, 
+                "Operator": s.operator, 
+                "Street": s.street, 
+                "lat": s.lat, 
+                "lon": s.lon,
+                # Check if it is broken (We will use this for colors later!)
+                "Status": "🔴 Broken" if malfunction_service.is_station_broken(s.station_id) else "🟢 Available"
+            }
+            for s in stations
+        ]
+        df = pd.DataFrame(data)
+
+        # 1. Metrics
+        col1, col2 = st.columns(2)
+        col1.metric("Stations Found", len(df))
+        col2.metric("Broken Stations", len(df[df["Status"] == "🔴 Broken"]))
+
+        # 2. Map
+        st.subheader(f"📍 Map of {zip_code}")
+        
+        # Define the Map Layer
+        layer = pdk.Layer(
+            "ScatterplotLayer",
+            data=df,
+            get_position='[lon, lat]',
+            get_color='[0, 200, 0, 160]',  # Green color for all (we will upgrade this next!)
+            get_radius=100,
+            pickable=True
+        )
+
+        view_state = pdk.ViewState(
+            latitude=df["lat"].mean(),
+            longitude=df["lon"].mean(),
+            zoom=13,
+            pitch=40
+        )
+
+        st.pydeck_chart(pdk.Deck(
+            map_style='mapbox://styles/mapbox/light-v9',
+            initial_view_state=view_state,
+            layers=[layer],
+            tooltip={"text": "{Operator}\n{Street}\nStatus: {Status}"}
+        ))
+
+        # 3. Data Table
+        st.subheader("📋 Station Details")
+        st.dataframe(df)
+
     else:
-        st.warning("Please enter a zip code to search.")
-else:
-    st.info("👈 Enter a zip code in the sidebar to start searching.")
+        st.warning("No stations found for this Zip Code.")
+
+if __name__ == "__main__":
+    main()
