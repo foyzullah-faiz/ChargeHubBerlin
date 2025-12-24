@@ -1,70 +1,91 @@
+import sys
+import os
 import streamlit as st
+
+# ==========================================
+# 🚨 CRITICAL PATH SETUP (DO NOT MOVE UP)
+# ==========================================
+# 1. Get the directory of this file: .../src/presentation
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# 2. Go up 2 levels to get the Project Root: .../chargehubberlin
+project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
+
+# 3. Add root to Python path so "import src..." works
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+# 4. Define CSV Path relative to root
+CSV_PATH = os.path.join(project_root, "src", "maintenance", "infrastructure", "datasets", "Ladesaeulenregister.csv")
+
+# ==========================================
+# 📦 CUSTOM IMPORTS (MUST BE BELOW PATH SETUP)
+# ==========================================
 import pandas as pd
 import pydeck as pdk
-import os
 import random
 
-# Import Services
-from src.shared.infrastructure.repositories.csv_repository import CsvChargingStationRepository
-from src.shared.application.services.station_service import StationService
-from src.shared.application.services.malfunction_service import MalfunctionService
+try:
+    from src.shared.infrastructure.repositories.csv_repository import CsvChargingStationRepository
+    from src.shared.application.services.station_service import StationService
+    from src.shared.application.services.malfunction_service import MalfunctionService
+except ImportError as e:
+    st.error("❌ Import Error: The app cannot find the internal modules.")
+    st.code(f"Current Path Fix: {sys.path}")
+    st.stop()
 
+# ==========================================
+# 🚀 MAIN APP
+# ==========================================
 def main():
     st.set_page_config(page_title="ChargeHub Berlin", layout="wide")
     st.title("⚡ ChargeHub Berlin")
 
-    # --- CONFIGURATION ---
-    CSV_PATH = "src/maintenance/infrastructure/datasets/Ladesaeulenregister.csv" 
-    
+    # --- CSV CHECK ---
     if not os.path.exists(CSV_PATH):
-        st.error(f"❌ Data file not found at: {CSV_PATH}")
-        return
+        st.error("❌ Data File Not Found")
+        st.write(f"Looking at: `{CSV_PATH}`")
+        st.stop()
 
     # --- INITIALIZE SERVICES ---
-    repo = CsvChargingStationRepository(CSV_PATH)
-    station_service = StationService(repo)
-    malfunction_service = MalfunctionService()
+    try:
+        repo = CsvChargingStationRepository(CSV_PATH)
+        station_service = StationService(repo)
+        malfunction_service = MalfunctionService()
+    except Exception as e:
+        st.error(f"❌ Service Initialization Failed: {e}")
+        st.stop()
 
     # --- HANDLING SUCCESS MESSAGES ---
     if 'success_msg' in st.session_state:
         st.success(st.session_state['success_msg'])
         del st.session_state['success_msg']
 
-    # ==========================================
-    # 👤 SIDEBAR: USER ROLE
-    # ==========================================
+    # --- SIDEBAR: ROLE ---
     st.sidebar.title("👤 User Role")
     role = st.sidebar.radio("Select Mode", ["🚗 Driver (Public)", "👮 Operator (Admin)"])
     st.sidebar.markdown("---")
 
-    # ==========================================
-    # 🚀 SEARCH & FILTER AREA
-    # ==========================================
+    # --- SIDEBAR: SEARCH ---
     st.sidebar.header("🔎 Search & Filter")
-    
-    # 1. ZIP CODE SEARCH
     zip_code = st.sidebar.text_input("Enter Zip Code", "10557")
     
-    # Fetch stations first based on Zip Code
+    # Validation & Fetching
     all_stations = []
     if zip_code and (not zip_code.isdigit() or len(zip_code) != 5):
         st.sidebar.warning("⚠️ Please enter a valid 5-digit Zip Code.")
     else:
         all_stations = station_service.get_stations_for_zip(zip_code)
 
-    # 2. OPERATOR FILTER (New Feature)
+    # Operator Filter
     selected_operators = []
     if all_stations:
-        # Get unique operators from the fetched stations and sort them
         unique_operators = sorted(list({s.operator for s in all_stations}))
-        
         selected_operators = st.sidebar.multiselect(
             "Filter by Operator",
             options=unique_operators,
-            default=[] # Default empty means "Show All"
+            default=[]
         )
-        
-        # Apply Filter
         if selected_operators:
             stations = [s for s in all_stations if s.operator in selected_operators]
         else:
@@ -72,50 +93,41 @@ def main():
     else:
         stations = []
 
-    valid_station_ids = {s.station_id for s in stations} if stations else set()
-
     # ==========================================
-    # 🔧 DRIVER MODE
+    # 🚗 DRIVER MODE
     # ==========================================
     if role == "🚗 Driver (Public)":
         st.sidebar.header("🔧 Report Issue")
         
-        # MOVED SELECTBOX OUTSIDE FORM (For instant "Other" updates)
         issue_type = st.sidebar.selectbox("Issue Type", ["Screen Broken", "No Power", "Cable Damaged", "Other"])
 
         with st.sidebar.form("report_form", clear_on_submit=True):
             station_id_input = st.text_input("Station ID (Copy from table)")
             
-            other_description = ""
+            other_desc = ""
             if issue_type == "Other":
-                other_description = st.text_input("Description (Required)")
+                other_desc = st.text_input("Description (Required)")
 
             submitted = st.form_submit_button("🚨 Submit Report")
             
             if submitted:
                 clean_id = station_id_input.strip()
-                
-                # Check against ALL loaded stations for the zip code, not just filtered ones
-                # (Users might want to report a station they know exists even if hidden by filter)
-                valid_ids_in_zip = {s.station_id for s in all_stations}
+                valid_ids = {s.station_id for s in all_stations}
 
-                if clean_id not in valid_ids_in_zip:
+                if clean_id not in valid_ids:
                     st.error(f"❌ Invalid ID: '{clean_id}' (Must be in Zip {zip_code})")
-                elif issue_type == "Other" and not other_description:
-                    st.error("❌ You selected 'Other'. Please write a description.")
+                elif issue_type == "Other" and not other_desc:
+                    st.error("❌ Description required for 'Other'.")
                 else:
-                    final_issue = issue_type if issue_type != "Other" else f"Other: {other_description}"
+                    final_issue = issue_type if issue_type != "Other" else f"Other: {other_desc}"
                     malfunction_service.report_malfunction(clean_id, final_issue)
                     st.session_state['success_msg'] = f"✅ Reported '{clean_id}'"
                     st.rerun()
 
         st.sidebar.markdown("---")
-        
-        # --- MAP ---
         st.markdown("### 🗺️ Public Map View")
         
         if stations:
-            # Show count of filtered vs total
             if selected_operators:
                 st.success(f"✅ Showing {len(stations)} of {len(all_stations)} stations in {zip_code}")
             else:
@@ -124,15 +136,11 @@ def main():
             data_list = []
             for i, s in enumerate(stations):
                 is_broken = malfunction_service.is_station_broken(s.station_id)
-                
-                if is_broken:
-                    status_text = "🔴 Not Available"
-                    color = [200, 0, 0, 255] # Red (Solid)
-                else:
-                    status_text = "🟢 Available"
-                    color = [0, 200, 0, 200] # Light Green (Bright)
+                status_text = "🔴 Not Available" if is_broken else "🟢 Available"
+                # Colors: Red or Light Green
+                color = [200, 0, 0, 255] if is_broken else [0, 200, 0, 200]
 
-                # JITTER (Visibility Fix)
+                # Jitter for visibility
                 lat_jitter = s.lat + random.uniform(-0.0005, 0.0005)
                 lon_jitter = s.lon + random.uniform(-0.0005, 0.0005)
 
@@ -145,13 +153,12 @@ def main():
                     "lat": lat_jitter,
                     "lon": lon_jitter,
                     "color": color,
-                    "radius": 80,
-                    "border": [0, 0, 0]
+                    "radius": 80
                 })
             
             df = pd.DataFrame(data_list)
             
-            # --- LAYERS ---
+            # Scatter Layer (Dots)
             scatter_layer = pdk.Layer(
                 'ScatterplotLayer', 
                 data=df, 
@@ -165,6 +172,7 @@ def main():
                 stroked=True
             )
 
+            # Text Layer (Numbers)
             text_layer = pdk.Layer(
                 "TextLayer",
                 data=df,
@@ -177,12 +185,10 @@ def main():
                 pickable=True
             )
 
-            midpoint = [df["lon"].mean(), df["lat"].mean()]
             view_state = pdk.ViewState(
-                latitude=midpoint[1], 
-                longitude=midpoint[0], 
-                zoom=12,
-                pitch=0
+                latitude=df["lat"].mean(), 
+                longitude=df["lon"].mean(), 
+                zoom=12
             )
 
             st.pydeck_chart(pdk.Deck(
@@ -192,13 +198,10 @@ def main():
                 tooltip={"text": "No: {No}\n{Operator}\n{Status}\nID: {Station ID}"}
             ))
             
-            st.dataframe(df.drop(columns=["color", "radius", "lat", "lon", "border"]).set_index("No"))
+            st.dataframe(df.drop(columns=["color", "radius", "lat", "lon"]).set_index("No"))
         else:
             if zip_code:
-                if all_stations and selected_operators:
-                    st.warning(f"No stations found for the selected operators in {zip_code}.")
-                else:
-                    st.warning(f"No stations found for Zip Code: {zip_code}")
+                st.warning("No stations found.")
 
     # ==========================================
     # 👮 OPERATOR MODE
