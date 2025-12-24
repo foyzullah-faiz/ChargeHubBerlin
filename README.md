@@ -1,5 +1,7 @@
 # ⚡ ChargeHub Berlin
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](PASTE_YOUR_LINK_HERE)
+
 **ChargeHub Berlin** is an interactive dashboard built with **Streamlit** that helps Electric Vehicle (EV) drivers in Berlin find charging stations and report malfunctions. It also provides an interface for operators to track and resolve reported issues.
 
 ## 🚀 Features
@@ -40,18 +42,7 @@
     cd chargehub-berlin
     ```
 
-2.  **Create a virtual environment (Optional but recommended):**
-    ```bash
-    # Windows
-    python -m venv venv
-    venv\Scripts\activate
-
-    # Mac/Linux
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
-
-3.  **Install dependencies:**
+2.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
@@ -69,20 +60,3 @@
     * Open your browser at `http://localhost:8501`.
     * Select **"🚗 Driver"** to search for stations.
     * Select **"👮 Operator"** to view reported issues.
-
----
-
-## 📂 Project Structure
-
-```text
-chargehub-berlin/
-├── src/
-│   ├── shared/
-│   │   ├── application/      # Service logic (StationService, MalfunctionService)
-│   │   └── infrastructure/   # Data repositories (CSV loading)
-│   └── maintenance/
-│       └── infrastructure/
-│           └── datasets/     # Contains Ladesaeulenregister.csv
-├── app.py                    # Main Streamlit Application
-├── requirements.txt          # Python dependencies
-└── README.md                 # Project Documentation
