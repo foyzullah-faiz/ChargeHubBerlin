@@ -8,16 +8,9 @@ A software engineering project to visualize electric vehicle charging stations i
 
 | Feature | Status | Live Demo |
 | :--- | :--- | :--- |
-| **Use Case 1: Search & Heatmap** | ✅ **Completed** | [Click to Test](https://chargestationberlin.streamlit.app/) |
-| **Use Case 2: Filter by Operator** | 🚧 *In Progress* | *Coming Soon* |
+| **Use Case 1: Discovery (Search & Map)** | ✅ **Completed** | [Click to Test](https://chargestationberlin.streamlit.app/) |
+| **Use Case 2: Malfunction Management** | 🚧 *In Progress* | *Coming Soon* |
 
 ## 🛠 Features
-* **Search by Zip Code:** Instantly find charging stations in any Berlin neighborhood.
-* **Interactive Map:** Visualizes station density with a heatmap.
-* **Clean Data:** Automatically filters invalid or incomplete station data.
-
-## 💻 Tech Stack
-* **Language:** Python 3.12
-* **UI:** Streamlit
-* **Testing:** Pytest (TDD)
-* **Architecture:** Clean Architecture (Separation of Concerns)
+* **Station Discovery:** Search by Zip Code to find available chargers.
+* **Malfunction Reporting:** (In Development) Track and report broken stations.
