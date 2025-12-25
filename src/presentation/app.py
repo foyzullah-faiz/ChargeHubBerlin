@@ -126,15 +126,15 @@ def main():
                     "Status": status_text,
                     "lat": lat_jitter,
                     "lon": lon_jitter,
-                    "color": color
+                    "color": color,
+                    "radius": 80
                 })
             
             df = pd.DataFrame(data_list)
             
             # --- LAYERS ---
-            
-            # 1. Base Map Layer (Standard OpenStreetMap Tiles)
-            # This ensures the map looks like "Google Maps" / Standard Web Map
+
+            # 1. TILE LAYER (Standard Colorful Map)
             tile_layer = pdk.Layer(
                 "TileLayer",
                 data=None,
@@ -143,7 +143,7 @@ def main():
                 get_height=256,
             )
 
-            # 2. Scatter Layer (The Dots)
+            # 2. SCATTER LAYER (Dots)
             scatter_layer = pdk.Layer(
                 'ScatterplotLayer', 
                 data=df, 
@@ -151,13 +151,13 @@ def main():
                 get_fill_color='color',
                 get_line_color=[0, 0, 0],
                 get_line_width=2,
-                get_radius=80,
+                get_radius='radius',
                 pickable=True,
                 filled=True,
                 stroked=True
             )
 
-            # 3. Text Layer (The Numbers)
+            # 3. TEXT LAYER (Numbers)
             text_layer = pdk.Layer(
                 "TextLayer",
                 data=df,
@@ -176,9 +176,7 @@ def main():
                 zoom=12
             )
 
-            # RENDER DECK
-            # Note: map_style=None removes the default dark/light theme 
-            # so our TileLayer shows through clearly.
+            # RENDER (Map Style MUST be None to show the TileLayer)
             st.pydeck_chart(pdk.Deck(
                 map_style=None,
                 initial_view_state=view_state,
@@ -186,7 +184,7 @@ def main():
                 tooltip={"text": "No: {No}\n{Operator}\n{Status}\nID: {Station ID}"}
             ))
             
-            st.dataframe(df.drop(columns=["color", "lat", "lon"]).set_index("No"))
+            st.dataframe(df.drop(columns=["color", "radius", "lat", "lon"]).set_index("No"))
         else:
             if zip_code:
                 st.warning("No stations found.")
