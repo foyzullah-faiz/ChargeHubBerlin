@@ -1,1 +1,26 @@
-[]
+[
+    {
+        "station_id": "BER-10409-7",
+        "description": "Other: Not Working",
+        "timestamp": "2025-12-25T02:31:45.926762",
+        "status": "Open"
+    },
+    {
+        "station_id": "BER-10409-9",
+        "description": "Cable Damaged",
+        "timestamp": "2025-12-25T02:33:20.108919",
+        "status": "Open"
+    },
+    {
+        "station_id": "BER-10409-5",
+        "description": "Cable Damaged",
+        "timestamp": "2025-12-25T02:36:26.700296",
+        "status": "Open"
+    },
+    {
+        "station_id": "BER-10409-2",
+        "description": "No Power",
+        "timestamp": "2025-12-25T02:38:37.780842",
+        "status": "Open"
+    }
+]
