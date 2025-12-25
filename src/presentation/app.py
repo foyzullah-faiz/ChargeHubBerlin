@@ -3,7 +3,7 @@ import os
 import streamlit as st
 
 # ==========================================
-# 🚨 CRITICAL SETUP - MUST RUN BEFORE IMPORTS
+# 🚨 CRITICAL SETUP
 # ==========================================
 current_file_path = os.path.abspath(__file__)
 current_dir = os.path.dirname(current_file_path)
@@ -34,14 +34,14 @@ except ImportError as e:
 # ==========================================
 def main():
     st.set_page_config(page_title="ChargeHub Berlin", layout="wide")
-    st.title("⚡ ChargeHub Berlin")
+    
+    # 📝 NOTE: I added "(v2)" here so you can SEE if the app updated!
+    st.title("⚡ ChargeHub Berlin (v2)")
 
-    # --- CSV CHECK ---
     if not os.path.exists(CSV_PATH):
         st.error("❌ Data File Not Found")
         st.stop()
 
-    # --- INITIALIZE SERVICES ---
     try:
         repo = CsvChargingStationRepository(CSV_PATH)
         station_service = StationService(repo)
@@ -133,17 +133,18 @@ def main():
             df = pd.DataFrame(data_list)
             
             # --- LAYERS ---
-
-            # 1. TILE LAYER (Standard Colorful Map)
+            
+            # 1. TileLayer: STANDARD COLORFUL MAP (OpenStreetMap)
             tile_layer = pdk.Layer(
                 "TileLayer",
                 data=None,
+                # This URL is the standard "Google Maps" style equivalent
                 get_bitmap="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
                 get_width=256,
                 get_height=256,
             )
 
-            # 2. SCATTER LAYER (Dots)
+            # 2. ScatterLayer (Dots)
             scatter_layer = pdk.Layer(
                 'ScatterplotLayer', 
                 data=df, 
@@ -157,7 +158,7 @@ def main():
                 stroked=True
             )
 
-            # 3. TEXT LAYER (Numbers)
+            # 3. TextLayer (Numbers)
             text_layer = pdk.Layer(
                 "TextLayer",
                 data=df,
@@ -176,7 +177,7 @@ def main():
                 zoom=12
             )
 
-            # RENDER (Map Style MUST be None to show the TileLayer)
+            # RENDER: map_style=None is REQUIRED for the colorful tiles to show
             st.pydeck_chart(pdk.Deck(
                 map_style=None,
                 initial_view_state=view_state,
